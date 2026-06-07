@@ -107,7 +107,7 @@ O padrão **DAO** (*Data Access Object*) é de uso **obrigatório** neste projet
 A implementação segue o **Princípio da Inversão de Dependência** (DIP — SOLID, Menolli 2025, Cap. 10): a camada Service depende da *interface* DAO, não da implementação concreta, permitindo que a implementação seja substituída sem impacto nas regras de negócio.
 
 ```
-interface AlunoDAO              ← contrato (depedência da camada Service)
+interface AlunoDAO              ← contrato (dependência da camada Service)
     └── AlunoDAOImpl            ← implementação concreta (@Repository)
 
 interface LivroDAO
