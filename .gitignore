@@ -4,6 +4,26 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Materiais locais de referência ###
+# Usados apenas para consulta local da equipe/Claude.
+# Não fazem parte dos entregáveis versionados.
+references/
+
+### Configurações locais e variáveis de ambiente ###
+.env
+.env.*
+*.local
+application-local.properties
+application-dev.properties
+
+### Logs ###
+*.log
+logs/
+
+### Sistema operacional ###
+.DS_Store
+Thumbs.db
+
 ### STS ###
 .apt_generated
 .classpath
@@ -14,7 +34,7 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -31,3 +51,4 @@ build/
 
 ### VS Code ###
 .vscode/
+
