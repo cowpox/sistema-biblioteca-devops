@@ -199,6 +199,28 @@ Todos os relacionamentos são unidirecionais no sentido da dependência (lado N 
 
 ---
 
+## Diagramas
+
+Os diagramas abaixo foram gerados a partir dos arquivos PlantUML versionados em `docs/diagramas/` e refletem exatamente as classes e tabelas implementadas na Issue #6.
+
+### Modelo de Domínio (UML — Diagrama de Classes)
+
+Visão orientada a objetos: classes, atributos com tipos Java, método `verPrazo()` e relacionamentos com cardinalidades. Anotações indicam os padrões GRASP aplicados (Expert e Creator).
+
+![Modelo de Domínio](diagramas/modelo-dominio.png)
+
+> Fonte: [`docs/diagramas/modelo-dominio.puml`](diagramas/modelo-dominio.puml)
+
+### DER — Diagrama Entidade-Relacionamento Inicial
+
+Visão relacional: tabelas com nomes em snake_case, campos com tipos SQL, chaves primárias (`PK`), chaves estrangeiras (`FK`), restrições de unicidade (`UNIQUE`) e cardinalidades Crow's Foot.
+
+![DER Inicial](diagramas/der-modelo-inicial.png)
+
+> Fonte: [`docs/diagramas/der-modelo-inicial.puml`](diagramas/der-modelo-inicial.puml)
+
+---
+
 ## Decisões de implementação
 
 | Decisão | Justificativa |
