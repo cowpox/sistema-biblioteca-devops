@@ -1,0 +1,101 @@
+@startuml
+title DER Inicial — Sistema de Biblioteca
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam EntityBorderColor #888888
+skinparam EntityBackgroundColor #FAFAFA
+skinparam EntityHeaderBackgroundColor #E8F5E9
+skinparam ArrowColor #555555
+
+' =============================================
+' Entidades / Tabelas
+' =============================================
+
+entity "aluno" as aluno {
+  * id : BIGINT <<PK>>
+  --
+  * matricula : VARCHAR <<UNIQUE>>
+  * nome : VARCHAR
+  cpf : VARCHAR(11) <<UNIQUE>>
+  endereco : VARCHAR
+  email : VARCHAR
+  ativo : BOOLEAN
+}
+
+entity "titulo" as titulo {
+  * id : BIGINT <<PK>>
+  --
+  * nome : VARCHAR
+  isbn : VARCHAR <<UNIQUE>>
+  prazo : INTEGER
+  autor : VARCHAR
+  editora : VARCHAR
+  edicao : VARCHAR
+  ano : INTEGER
+}
+
+entity "livro" as livro {
+  * id : BIGINT <<PK>>
+  --
+  * codigo_patrimonio : VARCHAR <<UNIQUE>>
+  disponivel : BOOLEAN
+  exemplar_biblioteca : BOOLEAN
+  * titulo_id : BIGINT <<FK>>
+}
+
+entity "emprestimo" as emprestimo {
+  * id : BIGINT <<PK>>
+  --
+  * aluno_id : BIGINT <<FK>>
+  * data_emprestimo : DATE
+  data_prevista_devolucao : DATE
+  data_devolucao : DATE
+  status : VARCHAR
+}
+
+entity "item_emprestimo" as item_emprestimo {
+  * id : BIGINT <<PK>>
+  --
+  * emprestimo_id : BIGINT <<FK>>
+  * livro_id : BIGINT <<FK>>
+  data_prevista_devolucao : DATE
+  data_devolucao : DATE
+}
+
+entity "debito" as debito {
+  * id : BIGINT <<PK>>
+  --
+  * aluno_id : BIGINT <<FK>>
+  emprestimo_id : BIGINT <<FK>>
+  * valor : DECIMAL(10,2)
+  * data_geracao : DATE
+  pago : BOOLEAN
+}
+
+' =============================================
+' Relacionamentos
+' =============================================
+
+titulo    ||--|{  livro          : "possui (1:N)"
+aluno     ||--o{  emprestimo     : "realiza (1:N)"
+emprestimo ||--|{ item_emprestimo : "contém (1:N)"
+livro     ||--o{  item_emprestimo : "referenciado em (1:N)"
+aluno     ||--o{  debito         : "possui (1:N)"
+emprestimo |o--o{  debito         : "origina (0..1:N)"
+
+' =============================================
+' Legenda
+' =============================================
+
+legend right
+  * campo obrigatório (NOT NULL)
+  campo opcional (nullable)
+  <<PK>> chave primária
+  <<FK>> chave estrangeira
+  <<UNIQUE>> restrição de unicidade
+endlegend
+
+@enduml
