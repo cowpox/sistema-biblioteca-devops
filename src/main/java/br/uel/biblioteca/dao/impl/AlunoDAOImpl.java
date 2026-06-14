@@ -61,6 +61,16 @@ public class AlunoDAOImpl implements AlunoDAO {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<Aluno> buscarPorCpf(String cpf) {
+        List<Aluno> resultado = em.createQuery(
+                "SELECT a FROM Aluno a WHERE a.cpf = :cpf", Aluno.class)
+                .setParameter("cpf", cpf)
+                .getResultList();
+        return resultado.isEmpty() ? Optional.empty() : Optional.of(resultado.get(0));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Aluno> buscarAtivos() {
         return em.createQuery(
                 "SELECT a FROM Aluno a WHERE a.ativo = true", Aluno.class)
