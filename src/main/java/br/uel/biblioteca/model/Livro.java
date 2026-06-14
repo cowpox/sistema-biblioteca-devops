@@ -1,6 +1,9 @@
 package br.uel.biblioteca.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "livro")
@@ -10,6 +13,8 @@ public class Livro {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Código de patrimônio é obrigatório")
+    @Pattern(regexp = "^$|[0-9]{6}$", message = "Código de patrimônio deve conter exatamente 6 dígitos numéricos")
     @Column(name = "codigo_patrimonio", nullable = false, unique = true)
     private String codigoPatrimonio;
 
@@ -21,7 +26,8 @@ public class Livro {
     @Column(name = "exemplar_biblioteca")
     private Boolean exemplarBiblioteca;
 
-    @ManyToOne
+    @Valid
+    @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "titulo_id", nullable = false)
     private Titulo titulo;
 

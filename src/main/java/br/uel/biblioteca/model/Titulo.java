@@ -1,6 +1,9 @@
 package br.uel.biblioteca.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "titulo")
@@ -10,13 +13,17 @@ public class Titulo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Título da obra é obrigatório")
     @Column(name = "nome", nullable = false)
     private String nome;
 
+    @NotBlank(message = "ISBN é obrigatório")
+    @Pattern(regexp = "^$|[0-9]{13}$", message = "ISBN deve conter exatamente 13 dígitos")
     @Column(name = "isbn", unique = true)
     private String isbn;
 
     // Prazo padrão de devolução em dias — usado por Livro.verPrazo() (Fig. 9.20, Cap. 9)
+    @Min(value = 1, message = "Prazo de devolução deve ser um número inteiro positivo.")
     @Column(name = "prazo")
     private Integer prazo;
 
@@ -30,8 +37,9 @@ public class Titulo {
     @Column(name = "edicao")
     private String edicao;
 
+    @Pattern(regexp = "^$|[0-9]{4}$", message = "Ano deve conter exatamente 4 dígitos numéricos")
     @Column(name = "ano")
-    private Integer ano;
+    private String ano;
 
     public Titulo() {
     }
@@ -92,11 +100,11 @@ public class Titulo {
         this.edicao = edicao;
     }
 
-    public Integer getAno() {
+    public String getAno() {
         return ano;
     }
 
-    public void setAno(Integer ano) {
+    public void setAno(String ano) {
         this.ano = ano;
     }
 }

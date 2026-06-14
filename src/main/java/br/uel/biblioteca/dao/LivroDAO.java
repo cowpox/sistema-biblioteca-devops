@@ -10,4 +10,6 @@ public interface LivroDAO extends GenericDAO<Livro> {
     List<Livro> buscarDisponiveis();
 
     Optional<Livro> buscarPorCodigoPatrimonio(String codigoPatrimonio);
+
+    Optional<Livro> buscarPorIsbn(String isbn);
 }
