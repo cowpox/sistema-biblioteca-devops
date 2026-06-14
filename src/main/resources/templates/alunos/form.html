@@ -11,6 +11,10 @@
     <h1 class="mb-3">Cadastrar aluno</h1>
 
     <form th:action="@{/alunos}" th:object="${aluno}" method="post">
+        <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger" role="alert">
+            <p th:each="err : ${#fields.globalErrors()}" th:text="${err}" class="mb-0"></p>
+        </div>
+
         <div class="mb-3">
             <label for="matricula" class="form-label">Matrícula <span class="text-danger">*</span></label>
             <input type="text" id="matricula" th:field="*{matricula}"

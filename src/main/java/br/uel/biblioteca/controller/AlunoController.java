@@ -45,7 +45,7 @@ public class AlunoController {
             alunoService.cadastrar(aluno);
             redirectAttrs.addFlashAttribute("sucesso", "Aluno cadastrado com sucesso.");
         } catch (IllegalArgumentException e) {
-            result.rejectValue("matricula", "matricula.duplicada", e.getMessage());
+            result.reject("erro.negocio", e.getMessage());
             return "alunos/form";
         }
         return "redirect:/alunos";

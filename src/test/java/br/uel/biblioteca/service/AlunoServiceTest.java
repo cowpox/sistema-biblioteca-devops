@@ -61,6 +61,21 @@ class AlunoServiceTest {
     }
 
     @Test
+    void cadastrar_deveLancarExcecao_quandoCpfJaCadastrado() {
+        aluno.setCpf("12345678901");
+        when(alunoDAO.buscarPorMatricula("12345678")).thenReturn(Optional.empty());
+        when(alunoDAO.buscarPorCpf("12345678901")).thenReturn(Optional.of(new Aluno()));
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> alunoService.cadastrar(aluno)
+        );
+
+        assertTrue(ex.getMessage().contains("CPF"));
+        verify(alunoDAO, never()).salvar(any());
+    }
+
+    @Test
     void cadastrar_deveNormalizarCamposOpcionaisVaziosParaNull() {
         aluno.setCpf("");
         aluno.setEmail("  ");

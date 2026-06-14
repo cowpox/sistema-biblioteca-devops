@@ -24,6 +24,12 @@ public class AlunoService {
                     "Ja existe aluno cadastrado com esta matricula: " + aluno.getMatricula());
         });
         normalizarCamposOpcionais(aluno);
+        if (aluno.getCpf() != null) {
+            alunoDAO.buscarPorCpf(aluno.getCpf()).ifPresent(existente -> {
+                throw new IllegalArgumentException(
+                        "Ja existe aluno cadastrado com este CPF.");
+            });
+        }
         aluno.setAtivo(true);
         return alunoDAO.salvar(aluno);
     }
