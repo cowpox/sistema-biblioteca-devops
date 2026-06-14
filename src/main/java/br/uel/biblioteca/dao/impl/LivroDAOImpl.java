@@ -68,4 +68,14 @@ public class LivroDAOImpl implements LivroDAO {
                 .getResultList();
         return resultado.isEmpty() ? Optional.empty() : Optional.of(resultado.get(0));
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Livro> buscarPorIsbn(String isbn) {
+        List<Livro> resultado = em.createQuery(
+                "SELECT l FROM Livro l WHERE l.titulo.isbn = :isbn", Livro.class)
+                .setParameter("isbn", isbn)
+                .getResultList();
+        return resultado.isEmpty() ? Optional.empty() : Optional.of(resultado.get(0));
+    }
 }
