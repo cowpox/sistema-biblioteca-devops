@@ -1,6 +1,9 @@
 package br.uel.biblioteca.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,19 +16,24 @@ public class Aluno {
     private Long id;
 
     // Chave de negócio — identificador único do aluno (Fig. 9.20, Cap. 9)
+    @NotBlank(message = "Matrícula é obrigatória")
+    @Pattern(regexp = "^$|[0-9]{8}$", message = "Matrícula deve conter 8 dígitos numéricos")
     @Column(name = "matricula", nullable = false, unique = true)
     private String matricula;
 
+    @NotBlank(message = "Nome é obrigatório")
     @Column(name = "nome", nullable = false)
     private String nome;
 
     // Atributos presentes no modelo do livro (Fig. 9.20, Cap. 9)
+    @Pattern(regexp = "^$|[0-9]{11}$", message = "CPF deve conter exatamente 11 dígitos numéricos")
     @Column(name = "cpf", unique = true, length = 11)
     private String cpf;
 
     @Column(name = "endereco")
     private String endereco;
 
+    @Email(message = "E-mail inválido")
     @Column(name = "email")
     private String email;
 
