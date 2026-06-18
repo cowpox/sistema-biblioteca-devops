@@ -65,4 +65,19 @@ public class EmprestimoDAOImpl implements EmprestimoDAO {
                 "SELECT e FROM Emprestimo e WHERE e.dataDevolucao IS NULL", Emprestimo.class)
                 .getResultList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Emprestimo> buscarComItens(Long id) {
+        List<Emprestimo> resultado = em.createQuery(
+                "SELECT DISTINCT e FROM Emprestimo e" +
+                " LEFT JOIN FETCH e.itens i" +
+                " LEFT JOIN FETCH i.livro l" +
+                " LEFT JOIN FETCH l.titulo" +
+                " WHERE e.id = :id",
+                Emprestimo.class)
+                .setParameter("id", id)
+                .getResultList();
+        return resultado.isEmpty() ? Optional.empty() : Optional.of(resultado.get(0));
+    }
 }
