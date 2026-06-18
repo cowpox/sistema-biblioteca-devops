@@ -9,7 +9,7 @@
 <body>
 <div class="container mt-4" style="max-width: 640px">
     <h1 class="mb-1">Realizar empréstimo</h1>
-    <p class="text-muted mb-4">Informe a matrícula do aluno e os códigos de patrimônio dos livros.</p>
+    <p class="text-muted mb-4">Informe a matrícula do aluno e os códigos de patrimônio dos exemplares.</p>
 
     <div th:if="${erro}" class="alert alert-danger" role="alert" th:text="${erro}"></div>
 
@@ -25,12 +25,12 @@
 
         <div class="mb-3">
             <label for="codigosPatrimonio" class="form-label">
-                Códigos de patrimônio dos livros <span class="text-danger">*</span>
+                Códigos de patrimônio dos exemplares <span class="text-danger">*</span>
             </label>
             <textarea id="codigosPatrimonio" th:field="*{codigosPatrimonio}"
                       class="form-control" rows="5"
                       placeholder="000001&#10;000002&#10;000003" required></textarea>
-            <div class="form-text">Um código por linha (6 dígitos cada). Vírgulas também são aceitas.</div>
+            <div class="form-text">Informe o patrimônio do exemplar físico a ser emprestado. Use um código por linha, com 6 dígitos. Vírgulas também são aceitas.</div>
         </div>
 
         <div class="d-flex gap-2">
