@@ -1,0 +1,43 @@
+@startuml
+title Diagrama de Caso de Uso — Devolver Livro\n(Menolli 2025, Cap. 9, Ex. 2–6)
+
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam ActorBorderColor #555555
+skinparam ActorBackgroundColor #FAFAFA
+skinparam UsecaseBorderColor #888888
+skinparam UsecaseBackgroundColor #FAFAFA
+skinparam UsecaseHeaderBackgroundColor #E3F2FD
+skinparam ArrowColor #555555
+skinparam NoteBorderColor #AAAAAA
+skinparam NoteBackgroundColor #FFFDE7
+
+actor Funcionario as "Funcionário"
+
+rectangle "Sistema de Biblioteca" {
+    usecase "Devolver Livro" as UC_Devolver
+    usecase "Localizar\nEmpréstimo Ativo" as UC_Localizar
+    usecase "Calcular\nAtraso e Multa" as UC_Calcular
+}
+
+Funcionario --> UC_Devolver
+
+UC_Devolver ..> UC_Localizar : <<include>>
+UC_Devolver ..> UC_Calcular  : <<include>>
+
+note right of UC_Calcular
+  Só executado se
+  dataDevolucao > dataPrevistaDevolucao.
+  Multa = diasAtraso × R$ 1,00
+  (EmprestimoService.MULTA_POR_DIA)
+end note
+
+note right of UC_Localizar
+  Busca ItemEmprestimo ativo
+  pelo codigoPatrimonio do livro
+  (dataDevolucao IS NULL)
+end note
+
+@enduml
