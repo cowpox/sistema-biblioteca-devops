@@ -6,6 +6,7 @@ import br.uel.biblioteca.dao.EmprestimoDAO;
 import br.uel.biblioteca.dao.LivroDAO;
 import br.uel.biblioteca.model.Aluno;
 import br.uel.biblioteca.model.Emprestimo;
+import br.uel.biblioteca.model.ItemEmprestimo;
 import br.uel.biblioteca.model.Livro;
 import br.uel.biblioteca.model.Titulo;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +39,8 @@ class EmprestimoServiceTest {
 
     private Aluno aluno;
     private Livro livro1;
+    private Emprestimo emprestimo;
+    private ItemEmprestimo item;
 
     @BeforeEach
     void setUp() {
@@ -56,6 +60,19 @@ class EmprestimoServiceTest {
         livro1.setDisponivel(true);
         livro1.setExemplarBiblioteca(false);
         livro1.setTitulo(titulo1);
+
+        emprestimo = new Emprestimo();
+        emprestimo.setId(10L);
+        emprestimo.setAluno(aluno);
+        emprestimo.setDataEmprestimo(LocalDate.now().minusDays(10));
+        emprestimo.setStatus("ATIVO");
+
+        item = new ItemEmprestimo();
+        item.setId(100L);
+        item.setEmprestimo(emprestimo);
+        item.setLivro(livro1);
+        item.setDataPrevistaDevolucao(LocalDate.now().plusDays(4));
+        emprestimo.getItens().add(item);
     }
 
     // -----------------------------------------------------------------------
@@ -257,6 +274,152 @@ class EmprestimoServiceTest {
 
         assertTrue(ex.getMessage().toLowerCase().contains("duplicado"));
         verify(emprestimoDAO, never()).salvar(any());
+    }
+
+    // -----------------------------------------------------------------------
+    // devolverLivro — cenários de sucesso
+    // -----------------------------------------------------------------------
+
+    @Test
+    void devolverLivro_deveDevolverLivro_semAtraso() {
+        livro1.setDisponivel(false);
+        LocalDate dataDevolucao = item.getDataPrevistaDevolucao(); // devolução no dia exato
+
+        when(livroDAO.buscarPorCodigoPatrimonio("000001")).thenReturn(Optional.of(livro1));
+        when(emprestimoDAO.buscarItemAtivoByCodigoPatrimonio("000001")).thenReturn(Optional.of(item));
+        when(livroDAO.atualizar(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(emprestimoDAO.atualizar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ResultadoDevolucao res = service.devolverLivro("000001", dataDevolucao);
+
+        assertEquals(0, res.getDiasAtraso());
+        assertEquals(BigDecimal.ZERO, res.getValorMulta());
+        assertEquals(dataDevolucao, res.getDataDevolucao());
+        assertEquals(dataDevolucao, item.getDataDevolucao());
+        assertTrue(livro1.getDisponivel(), "Livro deve voltar a ficar disponível");
+        verify(debitoDAO, never()).salvar(any());
+    }
+
+    @Test
+    void devolverLivro_deveDevolverLivro_comAtraso() {
+        livro1.setDisponivel(false);
+        item.setDataPrevistaDevolucao(LocalDate.now().minusDays(3));
+        LocalDate dataDevolucao = LocalDate.now();
+
+        when(livroDAO.buscarPorCodigoPatrimonio("000001")).thenReturn(Optional.of(livro1));
+        when(emprestimoDAO.buscarItemAtivoByCodigoPatrimonio("000001")).thenReturn(Optional.of(item));
+        when(livroDAO.atualizar(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(emprestimoDAO.atualizar(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(debitoDAO.salvar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ResultadoDevolucao res = service.devolverLivro("000001", dataDevolucao);
+
+        assertEquals(3, res.getDiasAtraso());
+        assertEquals(new BigDecimal("3"), res.getValorMulta());
+        verify(debitoDAO).salvar(any());
+    }
+
+    @Test
+    void devolverLivro_deveLiberarLivro_aposDevolver() {
+        livro1.setDisponivel(false);
+        when(livroDAO.buscarPorCodigoPatrimonio("000001")).thenReturn(Optional.of(livro1));
+        when(emprestimoDAO.buscarItemAtivoByCodigoPatrimonio("000001")).thenReturn(Optional.of(item));
+        when(livroDAO.atualizar(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(emprestimoDAO.atualizar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.devolverLivro("000001", LocalDate.now());
+
+        assertTrue(livro1.getDisponivel());
+        verify(livroDAO).atualizar(livro1);
+    }
+
+    @Test
+    void devolverLivro_deveEncerrarEmprestimo_quandoUnicoItemDevolvido() {
+        livro1.setDisponivel(false);
+        when(livroDAO.buscarPorCodigoPatrimonio("000001")).thenReturn(Optional.of(livro1));
+        when(emprestimoDAO.buscarItemAtivoByCodigoPatrimonio("000001")).thenReturn(Optional.of(item));
+        when(livroDAO.atualizar(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(emprestimoDAO.atualizar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        LocalDate dataDevolucao = LocalDate.now();
+        ResultadoDevolucao res = service.devolverLivro("000001", dataDevolucao);
+
+        assertTrue(res.isEmprestimoEncerrado());
+        assertEquals("ENCERRADO", emprestimo.getStatus());
+        assertEquals(dataDevolucao, emprestimo.getDataDevolucao());
+        verify(emprestimoDAO).atualizar(emprestimo);
+    }
+
+    @Test
+    void devolverLivro_naoDeveEncerrarEmprestimo_quandoHouverOutroItemPendente() {
+        livro1.setDisponivel(false);
+        Livro livro2 = criarLivro("000002", 7);
+        livro2.setDisponivel(false);
+        ItemEmprestimo item2 = new ItemEmprestimo();
+        item2.setId(101L);
+        item2.setEmprestimo(emprestimo);
+        item2.setLivro(livro2);
+        item2.setDataPrevistaDevolucao(LocalDate.now().plusDays(4));
+        emprestimo.getItens().add(item2); // emprestimo agora tem 2 itens
+
+        when(livroDAO.buscarPorCodigoPatrimonio("000001")).thenReturn(Optional.of(livro1));
+        when(emprestimoDAO.buscarItemAtivoByCodigoPatrimonio("000001")).thenReturn(Optional.of(item));
+        when(livroDAO.atualizar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ResultadoDevolucao res = service.devolverLivro("000001", LocalDate.now());
+
+        assertFalse(res.isEmprestimoEncerrado());
+        assertEquals("ATIVO", emprestimo.getStatus());
+        assertNull(emprestimo.getDataDevolucao());
+        verify(emprestimoDAO, never()).atualizar(any());
+    }
+
+    // -----------------------------------------------------------------------
+    // devolverLivro — fluxos alternativos
+    // -----------------------------------------------------------------------
+
+    @Test
+    void devolverLivro_deveLancarExcecao_quandoLivroNaoEncontrado() {
+        when(livroDAO.buscarPorCodigoPatrimonio("999999")).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.devolverLivro("999999", LocalDate.now()));
+
+        assertTrue(ex.getMessage().contains("999999"));
+        verify(emprestimoDAO, never()).buscarItemAtivoByCodigoPatrimonio(any());
+        verify(debitoDAO, never()).salvar(any());
+    }
+
+    @Test
+    void devolverLivro_deveLancarExcecao_quandoLivroNaoEmprestado() {
+        when(livroDAO.buscarPorCodigoPatrimonio("000001")).thenReturn(Optional.of(livro1));
+        when(emprestimoDAO.buscarItemAtivoByCodigoPatrimonio("000001")).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.devolverLivro("000001", LocalDate.now()));
+
+        assertTrue(ex.getMessage().toLowerCase().contains("empréstimo ativo")
+                || ex.getMessage().toLowerCase().contains("emprestimo ativo"));
+        verify(debitoDAO, never()).salvar(any());
+        verify(livroDAO, never()).atualizar(any());
+    }
+
+    @Test
+    void devolverLivro_naoDeveGerarDebito_quandoDevolucaoNoPrazo() {
+        livro1.setDisponivel(false);
+        item.setDataPrevistaDevolucao(LocalDate.now().plusDays(2)); // prazo ainda não vencido
+
+        when(livroDAO.buscarPorCodigoPatrimonio("000001")).thenReturn(Optional.of(livro1));
+        when(emprestimoDAO.buscarItemAtivoByCodigoPatrimonio("000001")).thenReturn(Optional.of(item));
+        when(livroDAO.atualizar(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(emprestimoDAO.atualizar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ResultadoDevolucao res = service.devolverLivro("000001", LocalDate.now());
+
+        assertEquals(0, res.getDiasAtraso());
+        verify(debitoDAO, never()).salvar(any());
     }
 
     // -----------------------------------------------------------------------

@@ -5,13 +5,16 @@ import br.uel.biblioteca.dao.DebitoDAO;
 import br.uel.biblioteca.dao.EmprestimoDAO;
 import br.uel.biblioteca.dao.LivroDAO;
 import br.uel.biblioteca.model.Aluno;
+import br.uel.biblioteca.model.Debito;
 import br.uel.biblioteca.model.Emprestimo;
 import br.uel.biblioteca.model.ItemEmprestimo;
 import br.uel.biblioteca.model.Livro;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -25,6 +28,8 @@ import java.util.Set;
 @Service
 @Transactional
 public class EmprestimoService {
+
+    static final BigDecimal MULTA_POR_DIA = BigDecimal.ONE;
 
     private final AlunoDAO alunoDAO;
     private final LivroDAO livroDAO;
@@ -131,6 +136,69 @@ public class EmprestimoService {
     @Transactional(readOnly = true)
     public Optional<Emprestimo> buscarComItens(Long id) {
         return emprestimoDAO.buscarComItens(id);
+    }
+
+    public ResultadoDevolucao devolverLivro(String codigoPatrimonio, LocalDate dataDevolucao) {
+        // FA-1: livro não cadastrado
+        livroDAO.buscarPorCodigoPatrimonio(codigoPatrimonio)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Livro não encontrado: " + codigoPatrimonio));
+
+        // FA-2: livro não possui empréstimo ativo
+        ItemEmprestimo item = emprestimoDAO.buscarItemAtivoByCodigoPatrimonio(codigoPatrimonio)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Livro " + codigoPatrimonio + " não possui empréstimo ativo."));
+
+        Emprestimo emprestimo = item.getEmprestimo();
+        Livro livro = item.getLivro();
+
+        // Registra data de devolução no item
+        item.setDataDevolucao(dataDevolucao);
+
+        // Calcula atraso em dias
+        long diasAtraso = 0;
+        if (item.getDataPrevistaDevolucao() != null
+                && dataDevolucao.isAfter(item.getDataPrevistaDevolucao())) {
+            diasAtraso = ChronoUnit.DAYS.between(item.getDataPrevistaDevolucao(), dataDevolucao);
+        }
+
+        // Cria débito se houver atraso
+        BigDecimal valorMulta = BigDecimal.ZERO;
+        if (diasAtraso > 0) {
+            valorMulta = MULTA_POR_DIA.multiply(BigDecimal.valueOf(diasAtraso));
+            Debito debito = new Debito();
+            debito.setAluno(emprestimo.getAluno());
+            debito.setEmprestimo(emprestimo);
+            debito.setValor(valorMulta);
+            debito.setDataGeracao(dataDevolucao);
+            debito.setPago(false);
+            debitoDAO.salvar(debito);
+        }
+
+        // Libera o livro
+        livro.setDisponivel(true);
+        livroDAO.atualizar(livro);
+
+        // Se todos os itens do empréstimo foram devolvidos, encerra o empréstimo
+        boolean todosDevolvidos = emprestimo.getItens().stream()
+                .allMatch(i -> i.getDataDevolucao() != null);
+        if (todosDevolvidos) {
+            emprestimo.setDataDevolucao(dataDevolucao);
+            emprestimo.setStatus("ENCERRADO");
+            emprestimoDAO.atualizar(emprestimo);
+        }
+
+        return new ResultadoDevolucao(
+                item.getId(),
+                emprestimo.getAluno().getNome(),
+                emprestimo.getAluno().getMatricula(),
+                livro.getCodigoPatrimonio(),
+                livro.getTitulo() != null ? livro.getTitulo().getNome() : "",
+                dataDevolucao,
+                item.getDataPrevistaDevolucao(),
+                diasAtraso,
+                valorMulta,
+                todosDevolvidos);
     }
 
     /**
