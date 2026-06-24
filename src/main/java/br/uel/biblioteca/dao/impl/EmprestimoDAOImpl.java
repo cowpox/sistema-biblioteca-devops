@@ -2,6 +2,7 @@ package br.uel.biblioteca.dao.impl;
 
 import br.uel.biblioteca.dao.EmprestimoDAO;
 import br.uel.biblioteca.model.Emprestimo;
+import br.uel.biblioteca.model.ItemEmprestimo;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
@@ -77,6 +78,24 @@ public class EmprestimoDAOImpl implements EmprestimoDAO {
                 " WHERE e.id = :id",
                 Emprestimo.class)
                 .setParameter("id", id)
+                .getResultList();
+        return resultado.isEmpty() ? Optional.empty() : Optional.of(resultado.get(0));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ItemEmprestimo> buscarItemAtivoByCodigoPatrimonio(String codigoPatrimonio) {
+        List<ItemEmprestimo> resultado = em.createQuery(
+                "SELECT DISTINCT i FROM ItemEmprestimo i" +
+                " JOIN FETCH i.emprestimo e" +
+                " JOIN FETCH e.aluno" +
+                " LEFT JOIN FETCH e.itens" +
+                " JOIN FETCH i.livro l" +
+                " JOIN FETCH l.titulo" +
+                " WHERE l.codigoPatrimonio = :codigo" +
+                " AND i.dataDevolucao IS NULL",
+                ItemEmprestimo.class)
+                .setParameter("codigo", codigoPatrimonio)
                 .getResultList();
         return resultado.isEmpty() ? Optional.empty() : Optional.of(resultado.get(0));
     }
