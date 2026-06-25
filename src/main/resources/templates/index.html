@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Sistema Biblioteca</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+<nav th:replace="~{fragments/nav :: navbar}"></nav>
+<div class="container mt-4">
+    <h1 class="mb-1">Sistema Biblioteca</h1>
+    <p class="text-muted mb-4">Selecione uma das opções abaixo para continuar.</p>
+
+    <div class="row g-3">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                    <h5 class="card-title mb-1">Alunos</h5>
+                    <p class="card-text text-muted small mb-3">Cadastrar e consultar alunos</p>
+                    <a th:href="@{/alunos}" class="btn btn-outline-primary mt-auto">Acessar</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                    <h5 class="card-title mb-1">Livros</h5>
+                    <p class="card-text text-muted small mb-3">Cadastrar e consultar livros</p>
+                    <a th:href="@{/livros}" class="btn btn-outline-primary mt-auto">Acessar</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                    <h5 class="card-title mb-1">Novo Empréstimo</h5>
+                    <p class="card-text text-muted small mb-3">Registrar empréstimo de exemplar</p>
+                    <a th:href="@{/emprestimos/novo}" class="btn btn-outline-success mt-auto">Acessar</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column align-items-center text-center p-4">
+                    <h5 class="card-title mb-1">Devolver Livro</h5>
+                    <p class="card-text text-muted small mb-3">Registrar devolução de exemplar</p>
+                    <a th:href="@{/emprestimos/devolver}" class="btn btn-outline-warning mt-auto">Acessar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
