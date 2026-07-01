@@ -1,6 +1,6 @@
 # Testes Unitários Automatizados
 
-Inventário dos testes unitários implementados com JUnit 5 e Mockito para as funcionalidades de Emprestar Livro e Devolver Livro.
+Inventário dos testes unitários implementados com JUnit 5 e Mockito para as funcionalidades de Emprestar Livro, Devolver Livro e Cadastro/Busca de Livros.
 
 ## Estratégia de teste
 
@@ -77,17 +77,41 @@ Arquivo de teste: `src/test/java/br/uel/biblioteca/service/EmprestimoServiceTest
 
 ---
 
+---
+
+## Busca de Exemplares por Termo
+
+Classe: `LivroService.buscarPorTermo(String termo)`  
+Arquivo de teste: `src/test/java/br/uel/biblioteca/service/LivroServiceTest.java`
+
+| Teste | Cenário | Resultado esperado |
+|---|---|---|
+| `buscarPorTermo_delegaAoDAO` | Termo válido com resultados | Delega ao DAO e retorna a lista |
+| `buscarPorTermo_retornaListaVazia_quandoSemResultado` | Termo sem correspondência | Lista vazia retornada |
+| `buscarPorTermo_retornaExemplaresIndisponiveis` | Exemplar `disponivel=false` no resultado do DAO | Service não filtra — retorna o exemplar |
+| `buscarPorTermo_retornaExemplaresDeBiblioteca` | Exemplar `exemplarBiblioteca=true` no resultado do DAO | Service não filtra — retorna o exemplar |
+| `buscarPorTermo_retornaExemplares_porNomeSemAcento` | DAO retorna "Cálculo Vol. 1" para busca "calculo" | Service repassa resultado sem modificar; delegação verificada |
+| `buscarPorTermo_retornaExemplares_porAutorSemAcento` | DAO retorna "Machado de Assis" para busca "assis" | Service repassa resultado sem modificar; delegação verificada |
+
+**Subtotal: 6 testes para buscarPorTermo**
+
+> **Nota:** a lógica de filtragem (exibir "Usar este exemplar" somente para disponível e não-biblioteca) está no template Thymeleaf, não no service. Os testes acima verificam que o service retorna todos os exemplares sem filtro, conforme esperado.
+
+> **Normalização accent-insensitive:** a remoção de acentos é feita em dois pontos simultâneos: (1) no Java via `java.text.Normalizer` (NFD + remoção de combining marks) sobre o termo buscado; (2) no SQL via `FUNCTION('translate', LOWER(campo), ...)` sobre as colunas `titulo.nome` e `titulo.autor`. Os testes de service com mock de DAO verificam delegação e contrato comportamental; a eficácia da função `translate()` no JPQL é validada pelo teste manual e pela compatibilidade declarada de H2 e PostgreSQL com essa função.
+
+---
+
 ## Resumo geral
 
 | Arquivo | Classe testada | Testes |
 |---|---|---|
 | `EmprestimoServiceTest.java` | `EmprestimoService` | 20 |
 | `AlunoServiceTest.java` | `AlunoService` | 4 |
-| `LivroServiceTest.java` | `LivroService` | 11 |
+| `LivroServiceTest.java` | `LivroService` | 19 |
 | `AlunoValidacaoTest.java` | Bean Validation / `Aluno` | 11 |
 | `LivroValidacaoTest.java` | Bean Validation / `Livro` + `Titulo` | 21 |
 | `BibliotecaApplicationTests.java` | Spring Boot context | 1 |
-| **Total** | | **68** |
+| **Total** | | **76** |
 
 ## Cobertura da issue #15
 

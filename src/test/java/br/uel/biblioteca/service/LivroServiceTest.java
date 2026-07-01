@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -235,5 +236,73 @@ class LivroServiceTest {
 
         assertTrue(ex.getMessage().contains("Prazo"));
         verify(livroDAO, never()).salvar(any());
+    }
+
+    @Test
+    void buscarPorTermo_delegaAoDAO() {
+        when(livroDAO.buscarPorTermo("clean")).thenReturn(List.of(livro));
+
+        List<Livro> resultado = livroService.buscarPorTermo("clean");
+
+        assertEquals(1, resultado.size());
+        verify(livroDAO).buscarPorTermo("clean");
+    }
+
+    @Test
+    void buscarPorTermo_retornaListaVazia_quandoSemResultado() {
+        when(livroDAO.buscarPorTermo("inexistente")).thenReturn(Collections.emptyList());
+
+        List<Livro> resultado = livroService.buscarPorTermo("inexistente");
+
+        assertTrue(resultado.isEmpty());
+        verify(livroDAO).buscarPorTermo("inexistente");
+    }
+
+    @Test
+    void buscarPorTermo_retornaExemplaresIndisponiveis() {
+        livro.setDisponivel(false);
+        when(livroDAO.buscarPorTermo("clean")).thenReturn(List.of(livro));
+
+        List<Livro> resultado = livroService.buscarPorTermo("clean");
+
+        assertFalse(resultado.get(0).getDisponivel(), "Service não deve filtrar indisponíveis");
+    }
+
+    @Test
+    void buscarPorTermo_retornaExemplaresDeBiblioteca() {
+        livro.setExemplarBiblioteca(true);
+        when(livroDAO.buscarPorTermo("clean")).thenReturn(List.of(livro));
+
+        List<Livro> resultado = livroService.buscarPorTermo("clean");
+
+        assertTrue(resultado.get(0).getExemplarBiblioteca(), "Service não deve filtrar exemplares de biblioteca");
+    }
+
+    // Nota: os dois testes abaixo verificam a delegação correta ao DAO com termo sem acento.
+    // A normalização real (via FUNCTION('translate') no JPQL) é exercitada apenas em teste
+    // de integração com banco — não há teste de DAO no projeto.
+
+    @Test
+    void buscarPorTermo_retornaExemplares_porNomeSemAcento() {
+        livro.getTitulo().setNome("Cálculo Vol. 1");
+        when(livroDAO.buscarPorTermo("calculo")).thenReturn(List.of(livro));
+
+        List<Livro> resultado = livroService.buscarPorTermo("calculo");
+
+        assertFalse(resultado.isEmpty());
+        assertEquals("Cálculo Vol. 1", resultado.get(0).getTitulo().getNome());
+        verify(livroDAO).buscarPorTermo("calculo");
+    }
+
+    @Test
+    void buscarPorTermo_retornaExemplares_porAutorSemAcento() {
+        livro.getTitulo().setAutor("Machado de Assis");
+        when(livroDAO.buscarPorTermo("assis")).thenReturn(List.of(livro));
+
+        List<Livro> resultado = livroService.buscarPorTermo("assis");
+
+        assertFalse(resultado.isEmpty());
+        assertEquals("Machado de Assis", resultado.get(0).getTitulo().getAutor());
+        verify(livroDAO).buscarPorTermo("assis");
     }
 }

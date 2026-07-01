@@ -7,6 +7,7 @@ import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.util.List;
 import java.util.Optional;
 
@@ -77,5 +78,25 @@ public class LivroDAOImpl implements LivroDAO {
                 .setParameter("isbn", isbn)
                 .getResultList();
         return resultado.isEmpty() ? Optional.empty() : Optional.of(resultado.get(0));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<Livro> buscarPorTermo(String termo) {
+        String semAcento = Normalizer.normalize(termo.toLowerCase(), Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}", "");
+        String like = "%" + semAcento + "%";
+        // Native SQL: FUNCTION('translate') em JPQL retorna Object no Hibernate 6, sem suporte a LIKE.
+        // Native query evita inferência de tipo e é compatível com H2 (testes) e PostgreSQL (produção).
+        return em.createNativeQuery(
+                "SELECT l.* FROM livro l JOIN titulo t ON l.titulo_id = t.id WHERE " +
+                "translate(lower(t.nome), 'áàãâäéèêëíìîïóòõôöúùûüçñý', 'aaaaaeeeeiiiiooooouuuucny') LIKE :like " +
+                "OR translate(lower(t.autor), 'áàãâäéèêëíìîïóòõôöúùûüçñý', 'aaaaaeeeeiiiiooooouuuucny') LIKE :like " +
+                "OR t.isbn = :isbn",
+                Livro.class)
+                .setParameter("like", like)
+                .setParameter("isbn", termo)
+                .getResultList();
     }
 }
