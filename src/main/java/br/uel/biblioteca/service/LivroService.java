@@ -26,9 +26,8 @@ public class LivroService {
         });
         String isbn = livro.getTitulo() != null ? livro.getTitulo().getIsbn() : null;
         if (isbn != null && !isbn.isBlank()) {
-            livroDAO.buscarPorIsbn(isbn).ifPresent(existente -> {
-                throw new IllegalArgumentException("Ja existe livro cadastrado com este ISBN: " + isbn);
-            });
+            livroDAO.buscarPorIsbn(isbn).ifPresent(existente ->
+                    livro.setTitulo(existente.getTitulo()));
         }
         Titulo titulo = livro.getTitulo();
         if (titulo != null) {
