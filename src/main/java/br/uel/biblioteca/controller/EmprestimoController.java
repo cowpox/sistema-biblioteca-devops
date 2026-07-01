@@ -30,8 +30,17 @@ public class EmprestimoController {
     }
 
     @GetMapping("/novo")
-    public String novo(Model model) {
-        model.addAttribute("form", new EmprestimoForm());
+    public String novo(@RequestParam(required = false) String codigosPatrimonio,
+                       @RequestParam(required = false) String matricula,
+                       Model model) {
+        EmprestimoForm form = new EmprestimoForm();
+        if (codigosPatrimonio != null && !codigosPatrimonio.isBlank()) {
+            form.setCodigosPatrimonio(codigosPatrimonio.trim());
+        }
+        if (matricula != null && !matricula.isBlank()) {
+            form.setMatricula(matricula.trim());
+        }
+        model.addAttribute("form", form);
         return "emprestimos/form";
     }
 

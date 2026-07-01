@@ -53,4 +53,9 @@ public class LivroService {
     public Optional<Livro> buscarPorId(Long id) {
         return livroDAO.buscarPorId(id);
     }
+
+    @Transactional(readOnly = true)
+    public List<Livro> buscarPorTermo(String termo) {
+        return livroDAO.buscarPorTermo(termo);
+    }
 }

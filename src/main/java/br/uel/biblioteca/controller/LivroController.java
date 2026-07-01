@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/livros")
@@ -35,6 +38,21 @@ public class LivroController {
         livro.setTitulo(new Titulo());
         model.addAttribute("livro", livro);
         return "livros/form";
+    }
+
+    @GetMapping("/buscar")
+    public String buscar(@RequestParam(required = false) String q,
+                         @RequestParam(required = false) String matricula,
+                         @RequestParam(required = false) String codigosPatrimonio,
+                         Model model) {
+        List<Livro> resultados = (q != null && !q.isBlank())
+                ? livroService.buscarPorTermo(q.trim())
+                : List.of();
+        model.addAttribute("resultados", resultados);
+        model.addAttribute("q", q != null ? q : "");
+        model.addAttribute("matricula", matricula != null ? matricula : "");
+        model.addAttribute("codigosPatrimonio", codigosPatrimonio != null ? codigosPatrimonio : "");
+        return "livros/buscar";
     }
 
     @PostMapping

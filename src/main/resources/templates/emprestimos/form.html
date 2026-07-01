@@ -33,6 +33,13 @@
                       class="form-control" rows="5"
                       placeholder="000001&#10;000002&#10;000003" required></textarea>
             <div class="form-text">Informe o patrimônio do exemplar físico a ser emprestado. Use um código por linha, com 6 dígitos. Vírgulas também são aceitas.</div>
+            <div class="form-text mt-1">
+                <button type="submit"
+                        formaction="/livros/buscar"
+                        formmethod="get"
+                        formnovalidate
+                        class="btn btn-link p-0 align-baseline">Não sabe o patrimônio? Buscar por título</button>
+            </div>
         </div>
 
         <div class="d-flex gap-2">
