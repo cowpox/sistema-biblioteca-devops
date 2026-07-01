@@ -64,18 +64,82 @@ class LivroServiceTest {
     }
 
     @Test
-    void cadastrar_deveLancarExcecao_quandoIsbnDuplicado() {
+    void cadastrar_deveReutilizarTitulo_quandoIsbnJaExiste() {
+        Titulo tituloExistente = new Titulo();
+        tituloExistente.setId(99L);
+        tituloExistente.setNome("Clean Code");
+        tituloExistente.setIsbn("9788576082705");
+        tituloExistente.setPrazo(7);
+
+        Livro livroExistente = new Livro();
+        livroExistente.setCodigoPatrimonio("000001");
+        livroExistente.setTitulo(tituloExistente);
+
         livro.getTitulo().setIsbn("9788576082705");
         when(livroDAO.buscarPorCodigoPatrimonio("123456")).thenReturn(Optional.empty());
-        when(livroDAO.buscarPorIsbn("9788576082705")).thenReturn(Optional.of(new Livro()));
+        when(livroDAO.buscarPorIsbn("9788576082705")).thenReturn(Optional.of(livroExistente));
+        when(livroDAO.salvar(any(Livro.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> livroService.cadastrar(livro)
-        );
+        Livro salvo = livroService.cadastrar(livro);
 
-        assertTrue(ex.getMessage().contains("ISBN"));
-        verify(livroDAO, never()).salvar(any());
+        assertSame(tituloExistente, salvo.getTitulo(), "Deve reutilizar o Titulo existente, não criar um novo");
+        assertEquals(99L, salvo.getTitulo().getId());
+        verify(livroDAO).salvar(livro);
+    }
+
+    @Test
+    void cadastrar_naoDeveCriarTituloDuplicado_quandoIsbnJaExiste() {
+        Titulo tituloExistente = new Titulo();
+        tituloExistente.setId(99L);
+        tituloExistente.setIsbn("9788576082705");
+
+        Livro livroExistente = new Livro();
+        livroExistente.setTitulo(tituloExistente);
+
+        Livro novoExemplar = new Livro();
+        novoExemplar.setCodigoPatrimonio("000002");
+        Titulo tituloDuplicado = new Titulo();
+        tituloDuplicado.setIsbn("9788576082705");
+        tituloDuplicado.setNome("Clean Code");
+        novoExemplar.setTitulo(tituloDuplicado);
+
+        when(livroDAO.buscarPorCodigoPatrimonio("000002")).thenReturn(Optional.empty());
+        when(livroDAO.buscarPorIsbn("9788576082705")).thenReturn(Optional.of(livroExistente));
+        when(livroDAO.salvar(any(Livro.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Livro salvo = livroService.cadastrar(novoExemplar);
+
+        assertSame(tituloExistente, salvo.getTitulo(), "Titulo do form deve ser substituído pelo existente no banco");
+    }
+
+    @Test
+    void cadastrar_devePermitirExemplarEmprestavelEBiblioteca_comMesmoIsbn() {
+        Titulo tituloExistente = new Titulo();
+        tituloExistente.setId(99L);
+        tituloExistente.setIsbn("9788576082705");
+        tituloExistente.setPrazo(7);
+
+        Livro livroExistente = new Livro();
+        livroExistente.setCodigoPatrimonio("000001");
+        livroExistente.setTitulo(tituloExistente);
+        livroExistente.setExemplarBiblioteca(false);
+
+        Livro novoExemplar = new Livro();
+        novoExemplar.setCodigoPatrimonio("000002");
+        novoExemplar.setExemplarBiblioteca(true);
+        Titulo tituloDuplicado = new Titulo();
+        tituloDuplicado.setIsbn("9788576082705");
+        novoExemplar.setTitulo(tituloDuplicado);
+
+        when(livroDAO.buscarPorCodigoPatrimonio("000002")).thenReturn(Optional.empty());
+        when(livroDAO.buscarPorIsbn("9788576082705")).thenReturn(Optional.of(livroExistente));
+        when(livroDAO.salvar(any(Livro.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Livro salvo = livroService.cadastrar(novoExemplar);
+
+        assertTrue(salvo.getExemplarBiblioteca(), "Novo exemplar deve manter sua própria classificação");
+        assertSame(tituloExistente, salvo.getTitulo(), "Deve compartilhar o mesmo Titulo");
+        verify(livroDAO).salvar(novoExemplar);
     }
 
     @Test
