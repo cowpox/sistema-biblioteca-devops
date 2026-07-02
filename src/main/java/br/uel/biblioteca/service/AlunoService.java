@@ -55,4 +55,9 @@ public class AlunoService {
     public Optional<Aluno> buscarPorId(Long id) {
         return alunoDAO.buscarPorId(id);
     }
+
+    @Transactional(readOnly = true)
+    public List<Aluno> buscarPorTermo(String termo) {
+        return alunoDAO.buscarPorTermo(termo);
+    }
 }
