@@ -12,4 +12,6 @@ public interface AlunoDAO extends GenericDAO<Aluno> {
     Optional<Aluno> buscarPorCpf(String cpf);
 
     List<Aluno> buscarAtivos();
+
+    List<Aluno> buscarPorTermo(String termo);
 }

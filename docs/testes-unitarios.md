@@ -101,17 +101,41 @@ Arquivo de teste: `src/test/java/br/uel/biblioteca/service/LivroServiceTest.java
 
 ---
 
+## Busca de Aluno por Termo
+
+Classe: `AlunoService.buscarPorTermo(String termo)`  
+Arquivo de teste: `src/test/java/br/uel/biblioteca/service/AlunoServiceTest.java`
+
+| Teste | Cenário | Resultado esperado |
+|---|---|---|
+| `buscarPorTermo_delegaAoDAO` | Termo válido com resultados | Delega ao DAO e retorna a lista |
+| `buscarPorTermo_retornaListaVazia_quandoSemResultado` | Termo sem correspondência | Lista vazia retornada |
+| `buscarPorTermo_retornaAlunosInativos` | Aluno `ativo=false` no resultado do DAO | Service não filtra — retorna o aluno; filtro de uso está na view |
+| `buscarPorTermo_retornaAlunos_porNomeParcial` | Busca por trecho do nome | Delega ao DAO e retorna resultados |
+| `buscarPorTermo_retornaAlunos_porNomeSemAcento` | DAO retorna "João Silva" para busca "joao" | Service repassa resultado sem modificar; delegação verificada |
+| `buscarPorTermo_retornaAluno_porCpfExatoSemPontuacao` | Busca por CPF "12345678900" (11 dígitos) | Aluno com CPF correspondente retornado |
+| `buscarPorTermo_retornaAluno_porCpfExatoComPontuacao` | Busca por "123.456.789-00" | DAO recebe o termo com pontuação e faz o strip internamente |
+| `buscarPorTermo_naoBuscaCpfParcial` | Busca por "456789" (< 11 dígitos) | Lista vazia; CPF parcial não dispara match de CPF no DAO |
+
+**Subtotal: 8 testes para buscarPorTermo**
+
+> **Nota:** a lógica "Usar este aluno" (apenas para `ativo=true`) está no template Thymeleaf, não no service. O service retorna ativos e inativos sem filtro, conforme esperado.
+
+> **Normalização:** nome — `translate(lower(...))` no SQL nativo + `Normalizer.NFD` no Java. CPF — `replaceAll("[^0-9]", "")` no Java, comparação exata; busca por CPF só é ativada quando o termo (após strip) tiver exatamente 11 dígitos.
+
+---
+
 ## Resumo geral
 
 | Arquivo | Classe testada | Testes |
 |---|---|---|
 | `EmprestimoServiceTest.java` | `EmprestimoService` | 20 |
-| `AlunoServiceTest.java` | `AlunoService` | 4 |
+| `AlunoServiceTest.java` | `AlunoService` | 12 |
 | `LivroServiceTest.java` | `LivroService` | 19 |
 | `AlunoValidacaoTest.java` | Bean Validation / `Aluno` | 11 |
 | `LivroValidacaoTest.java` | Bean Validation / `Livro` + `Titulo` | 21 |
 | `BibliotecaApplicationTests.java` | Spring Boot context | 1 |
-| **Total** | | **76** |
+| **Total** | | **84** |
 
 ## Cobertura da issue #15
 

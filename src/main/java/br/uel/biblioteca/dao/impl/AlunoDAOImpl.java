@@ -7,6 +7,7 @@ import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.util.List;
 import java.util.Optional;
 
@@ -75,5 +76,29 @@ public class AlunoDAOImpl implements AlunoDAO {
         return em.createQuery(
                 "SELECT a FROM Aluno a WHERE a.ativo = true", Aluno.class)
                 .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<Aluno> buscarPorTermo(String termo) {
+        String semAcento = Normalizer.normalize(termo.toLowerCase(), Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}", "");
+        String like = "%" + semAcento + "%";
+        String cpfNormalizado = termo.replaceAll("[^0-9]", "");
+        boolean buscaCpf = cpfNormalizado.length() == 11;
+
+        // Native SQL: evita problema de inferência de tipo do Hibernate 6 com translate().
+        // Busca por CPF só é ativada quando o termo (após strip de não-dígitos) tiver exatamente 11 dígitos.
+        String sql = "SELECT * FROM aluno WHERE " +
+                "translate(lower(nome), 'áàãâäéèêëíìîïóòõôöúùûüçñý', 'aaaaaeeeeiiiiooooouuuucny') LIKE :like" +
+                (buscaCpf ? " OR cpf = :cpf" : "");
+
+        var query = em.createNativeQuery(sql, Aluno.class)
+                .setParameter("like", like);
+        if (buscaCpf) {
+            query.setParameter("cpf", cpfNormalizado);
+        }
+        return query.getResultList();
     }
 }

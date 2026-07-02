@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/alunos")
@@ -26,6 +29,21 @@ public class AlunoController {
     public String listar(Model model) {
         model.addAttribute("alunos", alunoService.listarTodos());
         return "alunos/lista";
+    }
+
+    @GetMapping("/buscar")
+    public String buscar(@RequestParam(required = false) String q,
+                         @RequestParam(required = false) String matricula,
+                         @RequestParam(required = false) String codigosPatrimonio,
+                         Model model) {
+        List<Aluno> resultados = (q != null && !q.isBlank())
+                ? alunoService.buscarPorTermo(q.trim())
+                : List.of();
+        model.addAttribute("resultados", resultados);
+        model.addAttribute("q", q != null ? q : "");
+        model.addAttribute("matricula", matricula != null ? matricula : "");
+        model.addAttribute("codigosPatrimonio", codigosPatrimonio != null ? codigosPatrimonio : "");
+        return "alunos/buscar";
     }
 
     @GetMapping("/novo")
