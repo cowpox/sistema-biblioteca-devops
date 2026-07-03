@@ -52,7 +52,7 @@ A visão conceitual (Hofmeister; Nord; Soni, 2000 *apud* Menolli, 2025) descreve
 │  ┌──────────────────▼───────────────────────────┐  │
 │  │  MODEL (@Entity)           <<Entity>>        │  │
 │  │  Aluno · Livro · Titulo · Emprestimo         │  │
-│  │  ItemEmprestimo · Debito · Area · Autor      │  │
+│  │  ItemEmprestimo · Debito                     │  │
 │  └──────────────────┬───────────────────────────┘  │
 └─────────────────────┼──────────────────────────────┘
                       │ JDBC
@@ -93,7 +93,7 @@ No Sistema de Biblioteca, o MVC é implementado da seguinte forma:
 | Componente | Papel no MVC | Implementação |
 |---|---|---|
 | **Model** | Contém as entidades e dados do domínio. Encapsula o estado da aplicação e responde consultas sobre esse estado. | Classes `@Entity`: `Aluno`, `Livro`, `Titulo`, `Emprestimo`, `ItemEmprestimo`, `Debito` |
-| **View** | Exibe informações ao usuário e captura suas entradas. Não contém regras de negócio. | Templates Thymeleaf: `emprestar.html`, `devolver.html`, telas de cadastro |
+| **View** | Exibe informações ao usuário e captura suas entradas. Não contém regras de negócio. | Templates Thymeleaf: `emprestimos/form.html`, `emprestimos/devolver.html`, `alunos/form.html`, `livros/form.html`, comprovantes e demais telas |
 | **Controller** | Medeia o Model e a View. Mapeia as ações do usuário para operações no sistema e seleciona a View de resposta. | Classes `@Controller`: `AlunoController`, `LivroController`, `EmprestimoController` |
 
 A camada **Service** complementa o Controller ao concentrar as regras de negócio, evitando que o Controller fique sobrecarregado com lógica de domínio — seguindo o princípio de **Alta Coesão** (GRASP, Cap. 9).
@@ -127,7 +127,7 @@ Cada interface define as operações necessárias (salvar, buscar, atualizar, re
 
 Responsável por receber as requisições HTTP e coordenar o fluxo entre a interface e as regras de negócio. As classes são anotadas com `@Controller` (Spring MVC) e não devem conter lógica de negócio.
 
-Controladores previstos: `AlunoController`, `LivroController`, `EmprestimoController`.
+Controladores implementados: `AlunoController`, `LivroController`, `EmprestimoController`, `HomeController`.
 
 ### 6.2 Service
 
@@ -135,7 +135,7 @@ Concentra as regras de negócio do sistema. Atua entre o Controller e a camada D
 
 No contexto do Sistema de Biblioteca, essa camada aplica regras como: verificar se o aluno possui débito antes de um empréstimo, calcular a data de devolução e registrar multas em caso de atraso. Aplica o padrão GRASP **Controller (Facade)** — a classe `EmprestimoService` coordena o fluxo sem expor os detalhes internos das entidades.
 
-Serviços previstos: `AlunoService`, `LivroService`, `EmprestimoService`.
+Serviços implementados: `AlunoService`, `LivroService`, `EmprestimoService`.
 
 ### 6.3 DAO
 
@@ -157,14 +157,12 @@ As entidades previstas e suas responsabilidades no domínio são:
 | `Emprestimo` | Agrupa os itens de um empréstimo | Expert (`calcularDataDevolucao()`) + Creator |
 | `ItemEmprestimo` | Relaciona livro e empréstimo | Expert (`calculaDataDevolucao()`, `devolver()`) |
 | `Debito` | Registra multas por atraso | Entity |
-| `Area` | Categoriza títulos | Entity |
-| `Autor` | Dados do autor da obra | Entity |
 
 ### 6.5 View
 
 Responsável pela apresentação das informações ao usuário, implementada com templates **Thymeleaf** que recebem os dados processados pelo Controller e os renderizam em HTML. Não contém regras de negócio nem lógica de persistência.
 
-Views previstas: telas de cadastro de aluno e livro, tela de empréstimo, tela de devolução e comprovantes.
+Views implementadas: página inicial (`index.html`), telas de cadastro e listagem de alunos e livros, busca auxiliar de livro e aluno, tela de empréstimo (`emprestimos/form.html`), tela de devolução (`emprestimos/devolver.html`) e comprovantes. Os templates estão em `src/main/resources/templates/`.
 
 ---
 

@@ -29,18 +29,22 @@ O sistema implementa as funcionalidades de empréstimo e devolução de livros d
 ```
 sistema-biblioteca-devops/
 ├── .github/
-│   └── workflows/                  # Planejado Sprint 1: executa mvn test em todo PR
+│   └── workflows/                  # CI: executa mvn test em todo PR para develop e main
 ├── docs/
 │   ├── diagramas/                  # Diagramas PlantUML (.puml) e imagens geradas (.png)
-│   └── evidence/                   # Screenshots de evidência da organização do projeto
+│   ├── casos-de-uso/               # Descrição dos casos de uso (Emprestar Livro, Devolver Livro)
+│   ├── evidence/                   # Screenshots de evidência do processo por sprint
+│   ├── arquitetura.md              # Documentação da arquitetura do sistema
+│   ├── devops.md                   # Fluxo DevOps, sprints e Kanban
+│   ├── casos-de-teste.md           # 18 casos de teste formais
+│   └── testes-unitarios.md         # Inventário dos testes unitários automatizados
 ├── src/
 │   ├── main/
 │   │   ├── java/br/uel/biblioteca/ # Código-fonte principal
 │   │   │   ├── controller/         # Controllers Spring MVC
 │   │   │   ├── service/            # Serviços com regras de negócio
 │   │   │   ├── dao/                # Interfaces DAO e implementações
-│   │   │   ├── model/              # Entidades JPA
-│   │   │   └── exception/          # Exceções de domínio
+│   │   │   └── model/              # Entidades JPA
 │   │   └── resources/
 │   │       ├── templates/          # Views Thymeleaf (.html)
 │   │       └── application.properties
@@ -82,6 +86,28 @@ spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/biblioteca}
 spring.datasource.username=${DB_USER:postgres}
 spring.datasource.password=${DB_PASSWORD:postgres}
 spring.jpa.hibernate.ddl-auto=update
+```
+
+---
+
+## Como executar o projeto
+
+Com o PostgreSQL em execução e as credenciais configuradas em `application.properties`:
+
+**Windows:**
+```cmd
+mvnw.cmd spring-boot:run
+```
+
+**Linux / macOS:**
+```bash
+./mvnw spring-boot:run
+```
+
+Após a inicialização, acesse no navegador:
+
+```
+http://localhost:8080/
 ```
 
 ---
@@ -147,11 +173,17 @@ Todo PR deve referenciar a issue relacionada e descrever as mudanças realizadas
 
 ### GitHub Actions
 
-O workflow `.github/workflows/ci.yml` será configurado no Sprint 1 para executar `mvn test` automaticamente em todo Pull Request aberto contra `develop` ou `main`, garantindo que nenhuma alteração quebra o build ou os testes.
+O workflow `.github/workflows/ci.yml` executa `mvn test` automaticamente em todo Pull Request aberto contra `develop` ou `main`, garantindo que nenhuma alteração quebra o build ou os testes.
 
 ### Release
 
-A entrega final será publicada como Release `v1.0.0` na branch `main`, com tag Git e notas descrevendo os artefatos entregues. Todas as Issues devem estar fechadas e todos os cards do Kanban em `Done` antes da publicação da Release.
+A entrega final é publicada como Release `v1.0.0` na branch `main`, com tag Git `v1.0.0` e descrição dos artefatos entregues. A Release consolida:
+
+- Código funcional com todas as funcionalidades implementadas (cadastro, empréstimo, devolução)
+- Diagramas UML finalizados (pacotes, domínio, classes e sequência)
+- Documentação de arquitetura, casos de uso, casos de teste e testes unitários
+- Workflow de CI configurado e executando com sucesso
+- Kanban com todas as tarefas em `Done` e todas as Issues fechadas
 
 ---
 
@@ -159,20 +191,43 @@ A entrega final será publicada como Release `v1.0.0` na branch `main`, com tag 
 
 A pasta `docs/` concentra toda a documentação técnica do projeto:
 
-- `docs/diagramas/` — diagramas UML em formato PlantUML (`.puml`) e imagens renderizadas (`.png`):
-  - Diagrama de Pacotes (arquitetura do sistema)
-  - Diagrama de Classes — Emprestar Livro (com camada DAO)
-  - Diagrama de Sequência — Emprestar Livro (baseado na Fig. 11.11 do livro de referência)
-  - Diagrama de Caso de Uso — Devolver Livro
-  - Diagrama de Classes — Devolver Livro (com camada DAO)
-  - Diagrama de Sequência — Devolver Livro
-- `docs/evidence/` — screenshots de evidência da organização inicial do projeto no GitHub
+**Arquitetura e DevOps:**
+- `docs/arquitetura.md` — visão conceitual, arquitetura em camadas, padrão MVC e DAO, atributos de qualidade
+- `docs/devops.md` — fluxo de trabalho, sprints, Kanban, GitHub Actions e processo de release
+
+**Casos de uso:**
+- `docs/casos-de-uso/emprestar-livro.md` — descrição completa do CU Emprestar Livro com fluxos alternativos
+- `docs/casos-de-uso/devolver-livro.md` — descrição completa do CU Devolver Livro com fluxos alternativos
+
+**Implementação:**
+- `docs/emprestar-livro.md` — detalhamento da implementação do CU Emprestar Livro
+- `docs/modelo-dominio-inicial.md` — modelo de domínio e entidades
+- `docs/camada-dao-inicial.md` — especificação da camada DAO
+- `docs/persistencia.md` — configuração de persistência com JPA/Hibernate e PostgreSQL
+- `docs/ui-inicial.md` — especificação inicial da interface gráfica
+
+**Testes:**
+- `docs/casos-de-teste.md` — 18 casos de teste formais (CT-EMP-01 a CT-EMP-10, CT-DEV-01 a CT-DEV-08)
+- `docs/testes-unitarios.md` — inventário dos testes unitários automatizados (JUnit 5 + Mockito)
+
+**Diagramas PlantUML** (`docs/diagramas/`):
+- `arquitetura-pacotes.puml` — Diagrama de Pacotes (arquitetura do sistema)
+- `modelo-dominio.puml` — Modelo de Domínio
+- `der-modelo-inicial.puml` — Diagrama Entidade-Relacionamento
+- `diagrama-classes-emprestar.puml` — Diagrama de Classes — Emprestar Livro (com camada DAO)
+- `seq-emprestar-livro.puml` — Diagrama de Sequência — Emprestar Livro (Fig. 11.11 do livro de referência)
+- `caso-uso-devolver.puml` — Diagrama de Caso de Uso — Devolver Livro
+- `classe-devolver.puml` — Diagrama de Classes — Devolver Livro (com camada DAO)
+- `sequencia-devolver.puml` — Diagrama de Sequência — Devolver Livro
+
+**Evidências:**
+- `docs/evidence/` — screenshots registrando o processo de desenvolvimento ao longo dos 5 sprints (PRs mesclados, CI em execução, Kanban e organização do repositório)
 
 ---
 
-## Evidências iniciais de organização do projeto
+## Evidências do processo de desenvolvimento
 
-As imagens abaixo documentam a configuração inicial do repositório GitHub realizada no Sprint 1.
+As imagens abaixo documentam a configuração inicial do repositório GitHub realizada no Sprint 1. O conjunto completo de evidências, cobrindo do Sprint 1 ao Sprint 5, está disponível em `docs/evidence/`.
 
 **Configuração do projeto no Spring Initializr**
 
