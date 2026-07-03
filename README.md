@@ -90,6 +90,28 @@ spring.jpa.hibernate.ddl-auto=update
 
 ---
 
+## Como executar o projeto
+
+Com o PostgreSQL em execução e as credenciais configuradas em `application.properties`:
+
+**Windows:**
+```cmd
+mvnw.cmd spring-boot:run
+```
+
+**Linux / macOS:**
+```bash
+./mvnw spring-boot:run
+```
+
+Após a inicialização, acesse no navegador:
+
+```
+http://localhost:8080/
+```
+
+---
+
 ## Como executar os testes
 
 Os testes utilizam banco H2 em memória e não requerem PostgreSQL.
