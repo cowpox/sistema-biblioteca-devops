@@ -12,6 +12,7 @@ WORKDIR /app
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 
+RUN chmod +x mvnw
 # Baixar dependencias sem compilar o codigo-fonte
 RUN ./mvnw dependency:go-offline -B
 
