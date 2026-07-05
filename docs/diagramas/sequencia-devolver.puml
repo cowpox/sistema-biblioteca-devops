@@ -1,0 +1,108 @@
+@startuml
+title Diagrama de Sequência — Caso de Uso Devolver Livro\n(Menolli 2025, Cap. 9, Ex. 2–6 · Issue #12)
+
+skinparam sequenceArrowThickness 2
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam ParticipantBorderColor #888888
+skinparam ParticipantBackgroundColor #FAFAFA
+skinparam ActorBorderColor #555555
+skinparam SequenceGroupBorderColor #999999
+skinparam SequenceGroupBackgroundColor #F5F5F5
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteBorderColor #AAAAAA
+
+actor Funcionario
+
+box "Camada Controller" #E3F2FD
+    participant ":EmprestimoController" as Controller
+end box
+
+box "Camada Service (GRASP Facade/Controller)" #E8F5E9
+    participant ":EmprestimoService" as Service
+end box
+
+box "Camada DAO" #FFF3E0
+    participant ":LivroDAO" as LivroDAO
+    participant ":EmprestimoDAO" as EmprestimoDAO
+    participant ":DebitoDAO" as DebitoDAO
+end box
+
+box "Model / Entidades" #FCE4EC
+    participant "item:ItemEmprestimo" as Item
+    participant "emp:Emprestimo" as Emp
+    participant "livro:Livro" as Livro
+end box
+
+' ------------------------------------------------------------------
+' Fluxo Principal
+' ------------------------------------------------------------------
+
+Funcionario -> Controller : POST /emprestimos/devolver\n[codigoPatrimonio]
+activate Controller
+
+Controller -> Service : devolverLivro(codigoPatrimonio, LocalDate.now())
+activate Service
+
+' Passo 1 — verificar se livro existe
+Service -> LivroDAO : buscarPorCodigoPatrimonio(codigoPatrimonio)
+activate LivroDAO
+LivroDAO --> Service : livro
+deactivate LivroDAO
+
+note right of Service
+  FA-1: livro não cadastrado →
+  lança IllegalArgumentException
+end note
+
+' Passo 2 — localizar item de empréstimo ativo
+Service -> EmprestimoDAO : buscarItemAtivoByCodigoPatrimonio(codigoPatrimonio)
+activate EmprestimoDAO
+EmprestimoDAO --> Service : item [com emprestimo, aluno, livro, titulo via JOIN FETCH]
+deactivate EmprestimoDAO
+
+note right of Service
+  FA-2: nenhum item ativo →
+  lança IllegalArgumentException
+end note
+
+' Passo 3 — registrar devolução no item
+Service -> Item : setDataDevolucao(dataDevolucao)
+
+' Passo 4 — calcular atraso
+Service -> Service : verificar atraso\n(dataDevolucao.isAfter(dataPrevistaDevolucao))
+
+alt devolução com atraso (diasAtraso > 0)
+    Service -> Service : valorMulta = MULTA_POR_DIA × diasAtraso
+    Service -> DebitoDAO : salvar(new Debito{aluno, emprestimo, valorMulta, pago=false})
+    activate DebitoDAO
+    DebitoDAO --> Service : debito
+    deactivate DebitoDAO
+    note right of Service
+      Multa = R$ 1,00/dia de atraso
+      (MULTA_POR_DIA = BigDecimal.ONE)
+    end note
+end
+
+' Passo 5 — liberar livro
+Service -> Livro : setDisponivel(true)
+Service -> LivroDAO : atualizar(livro)
+
+' Passo 6 — verificar encerramento do empréstimo
+Service -> Emp : getItens().allMatch(i -> i.getDataDevolucao() != null)
+
+alt todos os itens devolvidos
+    Service -> Emp : setDataDevolucao(dataDevolucao)
+    Service -> Emp : setStatus("ENCERRADO")
+    Service -> EmprestimoDAO : atualizar(emprestimo)
+end
+
+Service --> Controller : ResultadoDevolucao
+deactivate Service
+
+Controller --> Funcionario : redirect /emprestimos/devolver/resultado\n[flash: resultado]
+deactivate Controller
+
+@enduml

@@ -1,0 +1,113 @@
+@startuml
+title Modelo de Domínio — Sistema de Biblioteca
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam ClassBorderColor #888888
+skinparam ClassBackgroundColor #FAFAFA
+skinparam ClassHeaderBackgroundColor #E3F2FD
+skinparam ArrowColor #555555
+skinparam NoteBorderColor #AAAAAA
+skinparam NoteBackgroundColor #FFFDE7
+
+' =============================================
+' Classes do modelo de domínio
+' =============================================
+
+class Aluno {
+  - id : Long
+  - matricula : String
+  - nome : String
+  - cpf : String
+  - endereco : String
+  - email : String
+  - ativo : Boolean
+}
+
+class Titulo {
+  - id : Long
+  - nome : String
+  - isbn : String
+  - prazo : Integer
+  - autor : String
+  - editora : String
+  - edicao : String
+  - ano : Integer
+}
+
+class Livro {
+  - id : Long
+  - codigoPatrimonio : String
+  - disponivel : Boolean
+  - exemplarBiblioteca : Boolean
+  + verPrazo() : Integer
+}
+
+class Emprestimo {
+  - id : Long
+  - dataEmprestimo : LocalDate
+  - dataPrevistaDevolucao : LocalDate
+  - dataDevolucao : LocalDate
+  - status : String
+}
+
+class ItemEmprestimo {
+  - id : Long
+  - dataPrevistaDevolucao : LocalDate
+  - dataDevolucao : LocalDate
+}
+
+class Debito {
+  - id : Long
+  - valor : BigDecimal
+  - dataGeracao : LocalDate
+  - pago : Boolean
+}
+
+' =============================================
+' Relacionamentos
+' =============================================
+
+' Titulo 1 → N Livro  (Fig 9.20: Livro 1..* → 1 Titulo)
+Titulo "1" <-- "1..*" Livro : titulo
+
+' Aluno 1 → N Emprestimo  (GRASP Creator)
+Aluno "1" <-- "0..*" Emprestimo : aluno
+
+' Emprestimo 1 → N ItemEmprestimo  (GRASP Creator / composição)
+Emprestimo "1" *-- "1..*" ItemEmprestimo : itens
+
+' ItemEmprestimo N → 1 Livro
+ItemEmprestimo "0..*" --> "1" Livro : livro
+
+' Aluno 1 → N Debito  (GRASP Creator)
+Aluno "1" <-- "0..*" Debito : aluno
+
+' Debito N → 0..1 Emprestimo  (opcional — extensão de impl; Fig 9.20 não mostra esta aresta)
+Debito "0..*" --> "0..1" Emprestimo : emprestimo
+
+' =============================================
+' Notas
+' =============================================
+
+note right of Livro
+  verPrazo() delega para Titulo.prazo
+  GRASP Expert (Cap. 9, §9.7.1)
+end note
+
+note bottom of Debito
+  Debito→Emprestimo: extensão de implementação.
+  Fig 9.20 (Cap. 9) mostra apenas Aluno→Debito.
+  A FK foi adicionada para rastrear a origem da multa.
+end note
+
+note bottom of Emprestimo
+  GRASP Creator: Emprestimo cria ItemEmprestimo
+  Aluno cria Emprestimo
+  (Cap. 9, §9.8.1)
+end note
+
+@enduml

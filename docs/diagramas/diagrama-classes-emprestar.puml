@@ -1,0 +1,178 @@
+@startuml
+title Diagrama de Classes — Emprestar Livro (com camada DAO)\n(Menolli 2025, Cap. 9, Ex. 2–6 · Cap. 13, Trecho 13.13)
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam ClassBorderColor #888888
+skinparam ClassBackgroundColor #FAFAFA
+skinparam ClassHeaderBackgroundColor #E3F2FD
+skinparam ArrowColor #555555
+skinparam NoteBorderColor #AAAAAA
+skinparam NoteBackgroundColor #FFFDE7
+
+' =============================================
+' Camada Controller
+' =============================================
+
+package "controller" #EBF5FB {
+    class EmprestimoController {
+        - emprestimoService : EmprestimoService
+        + novo(model) : String
+        + realizar(form, model) : String
+        + comprovante(id, model) : String
+        - parseCodigos(input) : List<String>
+    }
+
+    class EmprestimoForm {
+        - matricula : String
+        - codigosPatrimonio : String
+    }
+}
+
+' =============================================
+' Camada Service (GRASP Facade/Controller)
+' =============================================
+
+package "service" #E8F5E9 {
+    class EmprestimoService {
+        - alunoDAO : AlunoDAO
+        - livroDAO : LivroDAO
+        - emprestimoDAO : EmprestimoDAO
+        - debitoDAO : DebitoDAO
+        + realizarEmprestimo(matricula, codigos) : Emprestimo
+        + buscarComItens(id) : Optional<Emprestimo>
+        ~ calcularPrazoFinalDias(livros) : int
+    }
+}
+
+' =============================================
+' Camada DAO — interfaces (DIP)
+' =============================================
+
+package "dao" #FFF3E0 {
+    interface GenericDAO<T> {
+        + salvar(T) : T
+        + buscarPorId(Long) : Optional<T>
+        + listarTodos() : List<T>
+        + atualizar(T) : T
+        + excluir(Long) : void
+    }
+
+    interface AlunoDAO extends GenericDAO {
+        + buscarPorMatricula(String) : Optional<Aluno>
+        + buscarPorCpf(String) : Optional<Aluno>
+        + buscarAtivos() : List<Aluno>
+    }
+
+    interface LivroDAO extends GenericDAO {
+        + buscarDisponiveis() : List<Livro>
+        + buscarPorCodigoPatrimonio(String) : Optional<Livro>
+        + buscarPorIsbn(String) : Optional<Livro>
+    }
+
+    interface EmprestimoDAO extends GenericDAO {
+        + buscarPorAluno(Long) : List<Emprestimo>
+        + buscarAtivos() : List<Emprestimo>
+        + buscarComItens(Long) : Optional<Emprestimo>
+    }
+
+    interface DebitoDAO extends GenericDAO {
+        + buscarDebitosAtivosPorAluno(Long) : List<Debito>
+        + alunoTemDebitoAtivo(Long) : boolean
+    }
+
+    package "impl" #FFF8E1 {
+        class AlunoDAOImpl implements AlunoDAO
+        class LivroDAOImpl implements LivroDAO
+        class EmprestimoDAOImpl implements EmprestimoDAO
+        class DebitoDAOImpl implements DebitoDAO
+    }
+}
+
+' =============================================
+' Camada Model / Entidades
+' =============================================
+
+package "model" #FCE4EC {
+    class Aluno {
+        - id : Long
+        - matricula : String
+        - nome : String
+        - ativo : Boolean
+    }
+
+    class Livro {
+        - id : Long
+        - codigoPatrimonio : String
+        - disponivel : Boolean
+        - exemplarBiblioteca : Boolean
+        + verPrazo() : Integer
+    }
+
+    class Titulo {
+        - id : Long
+        - nome : String
+        - isbn : String
+        - prazo : Integer
+    }
+
+    class Emprestimo {
+        - id : Long
+        - dataEmprestimo : LocalDate
+        - dataPrevistaDevolucao : LocalDate
+        - status : String
+    }
+
+    class ItemEmprestimo {
+        - id : Long
+        - dataPrevistaDevolucao : LocalDate
+    }
+
+    class Debito {
+        - id : Long
+        - valor : BigDecimal
+        - pago : Boolean
+    }
+}
+
+' =============================================
+' Dependências entre camadas
+' =============================================
+
+EmprestimoController --> EmprestimoService : usa
+
+EmprestimoService --> AlunoDAO : usa
+EmprestimoService --> LivroDAO : usa
+EmprestimoService --> EmprestimoDAO : usa
+EmprestimoService --> DebitoDAO : usa
+
+EmprestimoService ..> Emprestimo : cria
+EmprestimoService ..> ItemEmprestimo : cria
+
+Livro --> Titulo : titulo
+Aluno "1" o-- "0..*" Emprestimo
+Emprestimo "1" *-- "1..*" ItemEmprestimo : itens
+ItemEmprestimo --> Livro : livro
+Aluno "1" o-- "0..*" Debito
+
+note right of EmprestimoService
+  GRASP Facade/Controller (Cap. 9, §9.6)
+  Orquestra o CU Emprestar Livro.
+  @Transactional garante atomicidade.
+end note
+
+note right of Livro
+  verPrazo() delega para Titulo.prazo
+  GRASP Expert (Cap. 9, §9.7.1)
+end note
+
+note bottom of AlunoDAO
+  DIP: Service depende da interface,
+  não da implementação (Cap. 10).
+  GenericDAO<T>: Trecho 13.13, Cap. 13.
+end note
+
+@enduml

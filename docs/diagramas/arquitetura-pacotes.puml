@@ -1,0 +1,89 @@
+@startuml
+title Arquitetura em Camadas — Sistema de Biblioteca
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam ArrowColor #555555
+skinparam PackageBorderColor #888888
+skinparam NoteBorderColor #AAAAAA
+skinparam NoteBackgroundColor #FAFAFA
+
+' =============================================
+' Camada de Apresentação
+' =============================================
+package "Apresentação  <<Boundary>>" as Apresentacao #E3F2FD {
+  [View\nThymeleaf / HTML\nemprestar.html · devolver.html\ncadastro-aluno.html · cadastro-livro.html] as View
+}
+
+' =============================================
+' Camada de Controle
+' =============================================
+package "Controle  <<Control>>" as Controle #FFF3E0 {
+  [Controller  (Spring MVC)\nAlunoController\nLivroController\nEmprestimoController] as Controller
+}
+
+' =============================================
+' Camada de Serviço
+' =============================================
+package "Serviço  <<Control>> · GRASP Facade" as Servico #FFFDE7 {
+  [Service  (Regras de Negócio)\nAlunoService · LivroService\nEmprestimoService] as Service
+}
+
+' =============================================
+' Camada de Acesso a Dados — Padrão DAO
+' =============================================
+package "Acesso a Dados  — Padrão DAO  (Menolli, 2025 — Cap. 13)" as CamadaDAO #F3E5F5 {
+  [«interface»\nAlunoDAO\nLivroDAO\nEmprestimoDAO] as DAOInterface
+
+  [AlunoDAOImpl\nLivroDAOImpl\nEmprestimoDAOImpl\n(@Repository)] as DAOImpl
+
+  DAOImpl ..|> DAOInterface : implementa
+}
+
+' =============================================
+' Camada de Modelo de Domínio
+' =============================================
+package "Modelo de Domínio  <<Entity>>" as CamadaModel #E8F5E9 {
+  [Aluno · Livro · Titulo\nEmprestimo · ItemEmprestimo\nDebito · Area · Autor\n(@Entity — JPA)] as Model
+}
+
+' =============================================
+' Banco de Dados
+' =============================================
+database "PostgreSQL\nBanco de Dados Relacional" as PostgreSQL #FFEBEE
+
+' =============================================
+' Fluxo principal entre camadas
+' =============================================
+View        -->  Controller    : HTTP (GET / POST)
+Controller  -->  Service       : delega regras de negócio
+Service     -->  DAOInterface  : solicita persistência / consulta
+DAOImpl     -->  PostgreSQL    : JPA / Hibernate\n(executa SQL)
+
+' =============================================
+' Dependências com o Model (TransferObject)
+' =============================================
+Controller  ..>  Model  : utiliza
+Service     ..>  Model  : manipula\n(GRASP Expert)
+DAOImpl     ..>  Model  : mapeia\n(TransferObject)
+
+' =============================================
+' Nota — Padrão DAO (Cap. 13)
+' =============================================
+note right of CamadaDAO
+  Padrão DAO — Menolli (2025, Cap. 13 — Fig. 13.20)
+  ─────────────────────────────────────────────────
+  Client           → EmprestimoService
+  DataAccessObject → *DAO (interface)
+  DataSource       → JPA / Hibernate
+  TransferObject   → @Entity (Model)
+
+  Regra: um DAO por entidade de domínio.
+  Service depende da interface — DIP (SOLID, Cap. 10).
+end note
+
+@enduml

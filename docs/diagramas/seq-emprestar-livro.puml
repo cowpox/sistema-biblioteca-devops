@@ -1,0 +1,134 @@
+@startuml
+title Diagrama de Sequência — Caso de Uso Emprestar Livro\n(completar Fig. 11.11, p. 226 — Menolli 2025)
+
+skinparam sequenceArrowThickness 2
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam ParticipantBorderColor #888888
+skinparam ParticipantBackgroundColor #FAFAFA
+skinparam ActorBorderColor #555555
+skinparam SequenceGroupBorderColor #999999
+skinparam SequenceGroupBackgroundColor #F5F5F5
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteBorderColor #AAAAAA
+
+actor Funcionario
+
+box "Camada Controller" #E3F2FD
+    participant ":EmprestimoController" as Controller
+end box
+
+box "Camada Service (GRASP Facade/Controller)" #E8F5E9
+    participant ":EmprestimoService" as Service
+end box
+
+box "Camada DAO" #FFF3E0
+    participant ":AlunoDAO" as AlunoDAO
+    participant ":DebitoDAO" as DebitoDAO
+    participant ":LivroDAO" as LivroDAO
+    participant ":EmprestimoDAO" as EmprestimoDAO
+end box
+
+box "Model / Entidades" #FCE4EC
+    participant "e:Emprestimo" as Emprestimo
+    participant "it:ItemEmprestimo" as Item
+end box
+
+' ------------------------------------------------------------------
+' Fluxo Principal
+' ------------------------------------------------------------------
+
+Funcionario -> Controller : POST /emprestimos\n[matricula, codigosPatrimonio]
+activate Controller
+
+Controller -> Service : realizarEmprestimo(matricula, codigos)
+activate Service
+
+' Passo 3 — verificar aluno
+Service -> AlunoDAO : buscarPorMatricula(matricula)
+activate AlunoDAO
+AlunoDAO --> Service : aluno
+deactivate AlunoDAO
+
+note right of Service
+  FA-1: aluno não cadastrado →
+  lança IllegalArgumentException
+  FA-1b: aluno inativo →
+  lança IllegalArgumentException
+end note
+
+' Passo 4 — verificar débito
+Service -> DebitoDAO : alunoTemDebitoAtivo(aluno.id)
+activate DebitoDAO
+DebitoDAO --> Service : false
+deactivate DebitoDAO
+
+note right of Service
+  FA-2: débito ativo →
+  lança IllegalArgumentException
+end note
+
+' Verificação de duplicatas
+note right of Service
+  Detecta códigos duplicados
+  na mesma solicitação →
+  lança IllegalArgumentException
+end note
+
+' Passo 5 — buscar e validar livros
+loop para cada codigoPatrimonio
+    Service -> LivroDAO : buscarPorCodigoPatrimonio(codigo)
+    activate LivroDAO
+    LivroDAO --> Service : livro
+    deactivate LivroDAO
+
+    note right of Service
+      FA-3: livro não encontrado
+      FA-4: exemplarBiblioteca = true
+      FA-5: disponivel = false
+    end note
+end
+
+' Passo 6 — calcular prazo
+Service -> Service : calcularPrazoFinalDias(livros)
+note right of Service
+  Prazo = max(prazo_i) + acréscimo
+  acréscimo = (n-2)*2 se n > 2
+  (Exercício 1, Cap. 9, Menolli 2025)
+end note
+
+' Passo 7 — criar Emprestimo (GRASP Creator)
+Service -> Emprestimo ** : new Emprestimo()
+Service -> Emprestimo : setAluno(aluno)
+Service -> Emprestimo : setDataEmprestimo(hoje)
+Service -> Emprestimo : setDataPrevistaDevolucao(hoje + prazoFinalDias)
+Service -> Emprestimo : setStatus("ATIVO")
+
+' Passo 8 — criar ItemEmprestimo para cada livro
+loop para cada livro
+    Service -> Item ** : new ItemEmprestimo()
+    Service -> Item : setLivro(livro)
+    Service -> Item : setDataPrevistaDevolucao(dataPrevista)
+    Service -> Emprestimo : getItens().add(item)
+end
+
+' Passo 9 — persistir (cascata cobre ItemEmprestimo)
+Service -> EmprestimoDAO : salvar(emprestimo)
+activate EmprestimoDAO
+EmprestimoDAO --> Service : emprestimo [id gerado]
+deactivate EmprestimoDAO
+
+' Passo 10 — marcar livros indisponíveis
+loop para cada livro
+    Service -> LivroDAO : atualizar(livro{disponivel=false})
+end
+
+Service --> Controller : emprestimo
+deactivate Service
+
+Controller --> Funcionario : redirect /emprestimos/{id}
+deactivate Controller
+
+@enduml

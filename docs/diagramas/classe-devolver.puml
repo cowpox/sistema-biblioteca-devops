@@ -1,0 +1,177 @@
+@startuml
+title Diagrama de Classes — Devolver Livro (com camada DAO)\n(Menolli 2025, Cap. 9, Ex. 2–6 · Cap. 13, Trecho 13.13)
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam ClassBorderColor #888888
+skinparam ClassBackgroundColor #FAFAFA
+skinparam ClassHeaderBackgroundColor #E3F2FD
+skinparam ArrowColor #555555
+skinparam NoteBorderColor #AAAAAA
+skinparam NoteBackgroundColor #FFFDE7
+
+' =============================================
+' Camada Controller
+' =============================================
+
+package "controller" #EBF5FB {
+    class EmprestimoController {
+        - emprestimoService : EmprestimoService
+        + mostrarFormularioDevolucao() : String
+        + realizarDevolucao(codigoPatrimonio, attrs) : String
+        + resultadoDevolucao(model) : String
+    }
+}
+
+' =============================================
+' Camada Service (GRASP Facade/Controller)
+' =============================================
+
+package "service" #E8F5E9 {
+    class EmprestimoService {
+        - livroDAO : LivroDAO
+        - emprestimoDAO : EmprestimoDAO
+        - debitoDAO : DebitoDAO
+        {static} MULTA_POR_DIA : BigDecimal = 1.00
+        + devolverLivro(codigoPatrimonio, dataDevolucao) : ResultadoDevolucao
+    }
+
+    class ResultadoDevolucao {
+        - itemId : Long
+        - alunoNome : String
+        - alunoMatricula : String
+        - livroCodigoPatrimonio : String
+        - tituloNome : String
+        - dataDevolucao : LocalDate
+        - dataPrevistaDevolucao : LocalDate
+        - diasAtraso : long
+        - valorMulta : BigDecimal
+        - emprestimoEncerrado : boolean
+    }
+}
+
+' =============================================
+' Camada DAO — interfaces (DIP)
+' =============================================
+
+package "dao" #FFF3E0 {
+    interface GenericDAO<T> {
+        + salvar(T) : T
+        + atualizar(T) : T
+        + excluir(Long) : void
+        + buscarPorId(Long) : Optional<T>
+        + listarTodos() : List<T>
+    }
+
+    interface LivroDAO extends GenericDAO {
+        + buscarPorCodigoPatrimonio(String) : Optional<Livro>
+    }
+
+    interface EmprestimoDAO extends GenericDAO {
+        + buscarItemAtivoByCodigoPatrimonio(String) : Optional<ItemEmprestimo>
+        + atualizar(Emprestimo) : Emprestimo
+    }
+
+    interface DebitoDAO extends GenericDAO {
+        + salvar(Debito) : Debito
+    }
+
+    package "impl" #FFF8E1 {
+        class LivroDAOImpl implements LivroDAO
+        class EmprestimoDAOImpl implements EmprestimoDAO {
+            + buscarItemAtivoByCodigoPatrimonio(String) : Optional<ItemEmprestimo>
+        }
+        class DebitoDAOImpl implements DebitoDAO
+    }
+}
+
+' =============================================
+' Camada Model / Entidades
+' =============================================
+
+package "model" #FCE4EC {
+    class Aluno {
+        - id : Long
+        - matricula : String
+        - nome : String
+        - ativo : Boolean
+    }
+
+    class Livro {
+        - id : Long
+        - codigoPatrimonio : String
+        - disponivel : Boolean
+    }
+
+    class Titulo {
+        - id : Long
+        - nome : String
+        - prazo : Integer
+    }
+
+    class Emprestimo {
+        - id : Long
+        - dataEmprestimo : LocalDate
+        - dataPrevistaDevolucao : LocalDate
+        - dataDevolucao : LocalDate
+        - status : String
+    }
+
+    class ItemEmprestimo {
+        - id : Long
+        - dataPrevistaDevolucao : LocalDate
+        - dataDevolucao : LocalDate
+    }
+
+    class Debito {
+        - id : Long
+        - valor : BigDecimal
+        - dataGeracao : LocalDate
+        - pago : Boolean
+    }
+}
+
+' =============================================
+' Dependências entre camadas
+' =============================================
+
+EmprestimoController --> EmprestimoService : usa
+
+EmprestimoService --> LivroDAO : usa
+EmprestimoService --> EmprestimoDAO : usa
+EmprestimoService --> DebitoDAO : usa
+EmprestimoService ..> ResultadoDevolucao : cria
+
+Livro --> Titulo : titulo
+Aluno "1" o-- "0..*" Emprestimo
+Emprestimo "1" *-- "1..*" ItemEmprestimo : itens
+ItemEmprestimo --> Livro : livro
+Aluno "1" o-- "0..*" Debito
+Debito --> Emprestimo : emprestimo
+
+note right of EmprestimoService
+  GRASP Facade/Controller (Cap. 9, §9.6)
+  devolverLivro() orquestra o CU Devolver Livro.
+  @Transactional garante atomicidade.
+  MULTA_POR_DIA = R$ 1,00/dia de atraso.
+end note
+
+note right of ItemEmprestimo
+  dataDevolucao IS NULL → item ativo/emprestado.
+  dataDevolucao NOT NULL → devolvido.
+  O Emprestimo só é ENCERRADO quando
+  todos os itens estiverem devolvidos.
+end note
+
+note bottom of EmprestimoDAOImpl
+  buscarItemAtivoByCodigoPatrimonio():
+  JPQL com JOIN FETCH carrega item +
+  emprestimo + aluno + todos os itens +
+  livro + titulo em uma única consulta.
+  (necessário com open-in-view=false)
+end note
+
+@enduml
