@@ -56,6 +56,16 @@ sistema-biblioteca-devops/
 
 ---
 
+## Aplicação publicada
+
+A aplicação está disponível publicamente no Render:
+
+**https://sistema-biblioteca-devops.onrender.com/**
+
+> Ambiente acadêmico de demonstração com dados fictícios. O serviço utiliza o plano gratuito do Render — o primeiro acesso após um período de inatividade pode levar até 50 segundos para inicializar.
+
+---
+
 ## Como clonar o repositório
 
 ```bash

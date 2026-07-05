@@ -1,0 +1,30 @@
+# Artefatos de build — nao necessarios no contexto Docker
+target/
+
+# Historico Git
+.git/
+
+# Materiais locais de referencia (gitignored, nao chegam ao contexto)
+references/
+
+# Documentacao e evidencias (nao usadas no build)
+docs/
+scripts/
+
+# Arquivos de IDE e SO
+.idea/
+.vscode/
+.mvn/wrapper/maven-wrapper.jar
+*.iml
+*.iws
+*.ipr
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Variaveis de ambiente locais
+.env
+.env.*
